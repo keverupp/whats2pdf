@@ -1,8 +1,8 @@
 # Whats2PDF
 
-Aplicação web para transformar conversas exportadas do WhatsApp (`.zip`) em PDFs A4 organizados, com mensagens, datas, imagens e referências aos demais anexos.
+Aplicação web para transformar conversas exportadas do WhatsApp (`.zip`) em PDF, HTML interativo ou EPUB, com mensagens, datas, imagens e demais anexos.
 
-A interface está disponível em português e inglês. O idioma é escolhido automaticamente pelo navegador e também pode mudar para inglês ao reconhecer uma exportação do WhatsApp nesse idioma. O seletor **PT / EN** permite ajuste manual, e os rótulos do PDF acompanham a escolha.
+A interface está disponível em português e inglês. O idioma é escolhido automaticamente pelo navegador e também pode mudar para inglês ao reconhecer uma exportação do WhatsApp nesse idioma. O seletor **PT / EN** permite ajuste manual, e os arquivos exportados acompanham a escolha.
 
 ## Privacidade
 
@@ -45,7 +45,7 @@ Qualquer serviço com Node.js pode executar `npm run build` e `npm start`. O pro
 ## O que é suportado
 
 - Exportações em português e inglês, com formatos comuns de Android e iPhone.
-- Interface e PDF em português ou inglês, com detecção automática e seletor manual.
+- Interface e exportações em português ou inglês, com detecção automática e seletor manual.
 - Mensagens multilinha e avisos do sistema.
 - Imagens JPEG, PNG, WebP e GIF que o navegador conseguir decodificar.
 - Reprodução de áudios e vídeos diretamente na prévia da conversa.
@@ -53,5 +53,7 @@ Qualquer serviço com Node.js pode executar `npm run build` e `npm start`. O pro
 - Documentos identificados na linha do tempo.
 - Escolha de qual participante representa o usuário.
 - PDF A4 paginado, pesquisável e com indicação das datas.
+- HTML interativo pesquisável, offline e com reprodução de áudio e vídeo no navegador.
+- EPUB pesquisável e ajustável, com mídia incorporada para leitores compatíveis.
 
-O acesso aos arquivos incorporados depende do leitor de PDF. Adobe Acrobat e outros leitores com suporte a anotações de anexos permitem abrir ou extrair a mídia pelo cartão; visualizadores simples do navegador podem mostrar apenas o cartão. Reprodução inline universal não faz parte do padrão implementado. Imagens HEIC dependem do suporte do navegador; quando não puderem ser abertas, aparecem como anexos identificados.
+No PDF, áudios e vídeos são anexos e não têm reprodução inline universal. No EPUB, a reprodução depende do leitor e do codec. O HTML interativo é baixado como ZIP: extraia o conteúdo e abra `index.html`, mantendo a pasta `media` ao lado. Imagens HEIC dependem do suporte do navegador; quando não puderem ser abertas, aparecem como anexos identificados.

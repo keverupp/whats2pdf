@@ -2,6 +2,8 @@ import type { Locale } from "@/lib/i18n";
 
 export type AttachmentCategory = "image" | "audio" | "video" | "document" | "other";
 
+export type ExportFormat = "pdf" | "html" | "epub";
+
 export type ChatAttachment = {
   name: string;
   mimeType: string;
@@ -35,10 +37,12 @@ export type ParsedChat = {
   detectedLocale: Locale;
 };
 
-export type PdfOptions = {
+export type ExportOptions = {
   title: string;
   owner: string;
   includeImages: boolean;
   includeMedia: boolean;
   locale: Locale;
 };
+
+export type PdfOptions = ExportOptions;

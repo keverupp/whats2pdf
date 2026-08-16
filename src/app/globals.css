@@ -540,6 +540,10 @@ select:focus-visible {
   gap: 14px;
 }
 
+.how-to li > div {
+  min-width: 0;
+}
+
 .how-to li > span {
   width: 28px;
   height: 28px;
@@ -565,6 +569,40 @@ select:focus-visible {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.menu-icon-example {
+  width: fit-content;
+  margin-top: 9px;
+  padding: 6px 9px 6px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand);
+  background: #fff;
+  border: 1px solid #dbe7e2;
+  border-radius: 10px;
+}
+
+.menu-icon-symbol {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--brand);
+  border-radius: 8px;
+}
+
+.menu-icon-symbol svg {
+  width: 18px;
+  height: 18px;
+}
+
+.menu-icon-example small {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .hero-compact {
@@ -599,7 +637,7 @@ select:focus-visible {
   margin: -18px auto 0;
   padding: 0 24px 92px;
   display: grid;
-  grid-template-columns: 350px minmax(0, 1fr);
+  grid-template-columns: 390px minmax(0, 1fr);
   gap: 25px;
   align-items: start;
 }
@@ -817,6 +855,120 @@ select:focus-visible {
 .field .select-wrap select {
   padding: 0 34px;
   appearance: none;
+}
+
+.format-picker {
+  min-width: 0;
+  margin: 20px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.format-picker legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.format-option {
+  position: relative;
+  margin-top: 8px;
+  padding: 11px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 18px;
+  align-items: start;
+  gap: 9px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.format-option:hover {
+  border-color: #aebfba;
+}
+
+.format-option.active {
+  background: #f0faf6;
+  border-color: var(--brand-bright);
+  box-shadow: 0 0 0 2px rgba(29, 155, 125, 0.08);
+}
+
+.format-option > input {
+  position: absolute;
+  opacity: 0;
+}
+
+.format-option:has(input:focus-visible) {
+  outline: 3px solid rgba(29, 155, 125, 0.3);
+  outline-offset: 2px;
+}
+
+.format-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--mint);
+  border-radius: 9px;
+}
+
+.format-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.format-copy,
+.format-copy strong,
+.format-copy span,
+.format-copy em {
+  display: block;
+}
+
+.format-copy strong {
+  font-size: 11px;
+}
+
+.format-copy strong small {
+  margin-left: 6px;
+  color: var(--brand-bright);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.format-copy span,
+.format-copy em {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.format-copy em {
+  color: #7b5c17;
+  font-style: normal;
+}
+
+.format-check {
+  width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #ccd6d2;
+  border-radius: 50%;
+}
+
+.format-option.active .format-check {
+  background: var(--brand-bright);
+}
+
+.format-check svg {
+  width: 11px;
+  height: 11px;
 }
 
 .toggle-row {
@@ -1268,7 +1420,7 @@ footer p {
 
 @media (max-width: 900px) {
   .workspace {
-    grid-template-columns: 310px minmax(0, 1fr);
+    grid-template-columns: 340px minmax(0, 1fr);
     gap: 16px;
   }
 

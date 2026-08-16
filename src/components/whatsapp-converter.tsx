@@ -3,10 +3,13 @@
 import Image from "next/image";
 import {
   ArrowDownToLine,
+  BookOpenText,
   Check,
   ChevronDown,
+  EllipsisVertical,
   FileArchive,
   FileAudio,
+  FileCode2,
   FileText,
   FileVideo,
   ImageIcon,
@@ -23,7 +26,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dictionaries, type Locale } from "@/lib/i18n";
-import type { ChatAttachment, ParsedChat } from "@/lib/types";
+import type { ChatAttachment, ExportFormat, ParsedChat } from "@/lib/types";
 import { parseWhatsAppZip, revokeChatUrls } from "@/lib/whatsapp";
 
 type AppStatus = "idle" | "reading" | "ready" | "generating" | "error";
@@ -51,6 +54,12 @@ function attachmentIcon(attachment: ChatAttachment) {
   return <FileText aria-hidden="true" />;
 }
 
+function exportFormatIcon(format: ExportFormat) {
+  if (format === "html") return <FileCode2 aria-hidden="true" />;
+  if (format === "epub") return <BookOpenText aria-hidden="true" />;
+  return <FileText aria-hidden="true" />;
+}
+
 export function WhatsAppConverter({ initialLocale }: { initialLocale: Locale }) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const [status, setStatus] = useState<AppStatus>("idle");
@@ -58,6 +67,7 @@ export function WhatsAppConverter({ initialLocale }: { initialLocale: Locale }) 
   const [error, setError] = useState("");
   const [title, setTitle] = useState("");
   const [owner, setOwner] = useState("");
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
   const [includeImages, setIncludeImages] = useState(true);
   const [includeMedia, setIncludeMedia] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
@@ -112,20 +122,30 @@ export function WhatsAppConverter({ initialLocale }: { initialLocale: Locale }) 
     if (inputRef.current) inputRef.current.value = "";
   }, []);
 
-  const downloadPdf = useCallback(async () => {
+  const downloadExport = useCallback(async () => {
     if (!chat || !owner) return;
     setStatus("generating");
     setProgress(0);
     setError("");
     try {
-      const { generateChatPdf } = await import("@/lib/pdf");
-      await generateChatPdf(chat, { title, owner, includeImages, includeMedia, locale }, setProgress);
+      const options = { title, owner, includeImages, includeMedia, locale };
+      if (exportFormat === "pdf") {
+        const { generateChatPdf } = await import("@/lib/pdf");
+        await generateChatPdf(chat, options, setProgress);
+      } else {
+        const { generateEpub, generateInteractiveHtml } = await import("@/lib/exports");
+        if (exportFormat === "html") {
+          await generateInteractiveHtml(chat, options, setProgress);
+        } else {
+          await generateEpub(chat, options, setProgress);
+        }
+      }
       setStatus("ready");
     } catch (cause) {
       setStatus("ready");
-      setError(cause instanceof Error ? cause.message : copy.genericPdfError);
+      setError(cause instanceof Error ? cause.message : copy.genericExportError);
     }
-  }, [chat, copy.genericPdfError, includeImages, includeMedia, locale, owner, title]);
+  }, [chat, copy.genericExportError, exportFormat, includeImages, includeMedia, locale, owner, title]);
 
   const changeLocale = useCallback((nextLocale: Locale) => {
     setLocale(nextLocale);
@@ -223,7 +243,19 @@ export function WhatsAppConverter({ initialLocale }: { initialLocale: Locale }) 
               </div>
               <ol>
                 {copy.howSteps.map(([heading, description], index) => (
-                  <li key={heading}><span>{index + 1}</span><div><strong>{heading}</strong><p>{description}</p></div></li>
+                  <li key={heading}>
+                    <span>{index + 1}</span>
+                    <div>
+                      <strong>{heading}</strong>
+                      <p>{description}</p>
+                      {index === 1 && (
+                        <span className="menu-icon-example">
+                          <span className="menu-icon-symbol" aria-hidden="true"><EllipsisVertical /></span>
+                          <small>{copy.menuIconExample}</small>
+                        </span>
+                      )}
+                    </div>
+                  </li>
                 ))}
               </ol>
             </div>
@@ -271,6 +303,31 @@ export function WhatsAppConverter({ initialLocale }: { initialLocale: Locale }) 
                 <small>{copy.ownerHint}</small>
               </label>
 
+              <fieldset className="format-picker">
+                <legend>{copy.exportFormat}</legend>
+                {(["pdf", "html", "epub"] as const).map((format) => {
+                  const formatCopy = copy.formats[format];
+                  return (
+                    <label className={`format-option ${exportFormat === format ? "active" : ""}`} key={format}>
+                      <input
+                        type="radio"
+                        name="export-format"
+                        value={format}
+                        checked={exportFormat === format}
+                        onChange={() => setExportFormat(format)}
+                      />
+                      <span className="format-icon">{exportFormatIcon(format)}</span>
+                      <span className="format-copy">
+                        <strong>{formatCopy.name}<small>{formatCopy.badge}</small></strong>
+                        <span>{formatCopy.description}</span>
+                        <em>{formatCopy.limitation}</em>
+                      </span>
+                      <span className="format-check"><Check aria-hidden="true" /></span>
+                    </label>
+                  );
+                })}
+              </fieldset>
+
               <label className="toggle-row">
                 <span><strong>{copy.includePhotos}</strong><small>{copy.includePhotosHint}</small></span>
                 <input type="checkbox" checked={includeImages} onChange={(event) => setIncludeImages(event.target.checked)} />
@@ -278,7 +335,7 @@ export function WhatsAppConverter({ initialLocale }: { initialLocale: Locale }) 
               </label>
 
               <label className="toggle-row">
-                <span><strong>{copy.includeMedia}</strong><small>{copy.includeMediaHint}</small></span>
+                <span><strong>{copy.includeMedia}</strong><small>{copy.includeMediaHint(exportFormat)}</small></span>
                 <input type="checkbox" checked={includeMedia} onChange={(event) => setIncludeMedia(event.target.checked)} />
                 <i aria-hidden="true" />
               </label>
@@ -286,18 +343,20 @@ export function WhatsAppConverter({ initialLocale }: { initialLocale: Locale }) 
               {chat.warnings.map((warning) => <div className="warning-message" key={warning}>{warning}</div>)}
               {error && <div className="error-message" role="alert"><X aria-hidden="true" /> {error}</div>}
 
-              <button className="button button-download" type="button" onClick={() => void downloadPdf()} disabled={!owner || status === "generating"}>
+              <button className="button button-download" type="button" onClick={() => void downloadExport()} disabled={!owner || status === "generating"}>
                 {status === "generating" ? <LoaderCircle className="spin" aria-hidden="true" /> : <ArrowDownToLine aria-hidden="true" />}
-                {status === "generating" ? copy.generating(progress) : copy.generate}
+                {status === "generating"
+                  ? copy.generating(copy.formats[exportFormat].name, progress)
+                  : copy.generate(copy.formats[exportFormat].name)}
               </button>
-              {status === "generating" && <div className="progress-track" aria-label={`${copy.generating(progress)}`}><span style={{ width: `${progress}%` }} /></div>}
+              {status === "generating" && <div className="progress-track" aria-label={copy.generating(copy.formats[exportFormat].name, progress)}><span style={{ width: `${progress}%` }} /></div>}
               <p className="privacy-note"><LockKeyhole aria-hidden="true" /> {copy.nothingSent}</p>
             </aside>
 
             <div className="preview-panel">
               <div className="preview-heading">
                 <div><span className="section-kicker">{copy.preview}</span><h2>{copy.previewTitle}</h2></div>
-                <span className="a4-badge">{copy.a4}</span>
+                <span className="a4-badge">{copy.previewBadges[exportFormat]}</span>
               </div>
 
               <div className="paper-preview">
