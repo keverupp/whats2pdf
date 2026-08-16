@@ -6,9 +6,23 @@ import "./globals.css";
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const locale = detectPreferredLocale(requestHeaders.get("accept-language"));
+  const { metaTitle, metaDescription, htmlLang } = dictionaries[locale];
   return {
-    title: dictionaries[locale].metaTitle,
-    description: dictionaries[locale].metaDescription,
+    title: metaTitle,
+    description: metaDescription,
+    applicationName: "Whats2PDF",
+    openGraph: {
+      type: "website",
+      siteName: "Whats2PDF",
+      title: metaTitle,
+      description: metaDescription,
+      locale: htmlLang.replace("-", "_"),
+    },
+    twitter: {
+      card: "summary",
+      title: metaTitle,
+      description: metaDescription,
+    },
   };
 }
 

@@ -1,5 +1,7 @@
 export type Locale = "pt" | "en";
 
+export const REPOSITORY_URL = "https://github.com/keverupp/whats2pdf";
+
 export function detectPreferredLocale(value?: string | null): Locale {
   if (!value) return "pt";
   const languages = value.toLowerCase().split(",").map((entry) => entry.trim().split(";")[0]);
@@ -14,12 +16,12 @@ export const dictionaries = {
   pt: {
     htmlLang: "pt-BR",
     metaTitle: "Whats2PDF — Exporte conversas do WhatsApp",
-    metaDescription: "Transforme conversas exportadas do WhatsApp em PDF, HTML interativo ou EPUB, com mídia e privacidade.",
+    metaDescription: "Transforme conversas exportadas do WhatsApp em PDF, HTML interativo ou EPUB, com mídia e privacidade. Projeto open source, processado no seu navegador.",
     brandHome: "Whats2PDF — início",
     privacyPill: "Seus arquivos não saem do navegador",
     eyebrow: "Simples, privado e organizado",
     heroLineOne: "Sua conversa do WhatsApp.",
-    heroLineTwo: "Bonita no papel.",
+    heroLineTwo: "Bonita como no papel.",
     heroDescription: "Transforme o ZIP exportado pelo WhatsApp em PDF, HTML interativo ou EPUB, com mensagens, fotos, datas e anexos no lugar certo.",
     stepsLabel: "Etapas",
     steps: ["Enviar ZIP", "Revisar", "Baixar arquivo"],
@@ -35,7 +37,20 @@ export const dictionaries = {
       ["100% privado", "Processado no seu dispositivo"],
       ["Fotos no lugar certo", "Mídia junto da mensagem"],
       ["Três formatos", "PDF, HTML interativo ou EPUB"],
+      ["Código aberto", "Confira o código no GitHub"],
     ],
+    openSourceLabel: "Código aberto",
+    openSourceKicker: "Open source",
+    openSourceTitle: "Código aberto e livre para conferência.",
+    openSourceDescription: "O Whats2PDF é um projeto open source: todo o código que roda no seu navegador está publicado no GitHub. Qualquer pessoa pode conferir, auditar, adaptar ou contribuir.",
+    openSourceCta: "Ver o código no GitHub",
+    openSourceRepoLabel: "Repositório",
+    openSourcePoints: [
+      ["Código público", "O projeto inteiro está no GitHub, sem partes fechadas."],
+      ["Auditável", "Dá para conferir linha a linha que nada sai do seu dispositivo."],
+      ["Livre para usar", "Rode localmente, faça um fork e adapte do seu jeito."],
+    ],
+    viewOnGithub: "Abrir o repositório no GitHub",
     howKicker: "Como exportar",
     howTitle: "Como exportar sua conversa do WhatsApp.",
     howSteps: [
@@ -99,16 +114,17 @@ export const dictionaries = {
     fullPdfRemaining: (count: number) => `+ ${count} mensagens no arquivo completo`,
     footerText: "Feito para organizar memórias, registros e conversas importantes.",
     footerPrivacy: "Privacidade por princípio.",
+    footerOpenSource: "Projeto open source, com código público no GitHub.",
   },
   en: {
     htmlLang: "en",
     metaTitle: "Whats2PDF — Export WhatsApp chats",
-    metaDescription: "Turn exported WhatsApp chats into private PDF, interactive HTML, or EPUB files with media.",
+    metaDescription: "Turn exported WhatsApp chats into private PDF, interactive HTML, or EPUB files with media. Open source and processed in your browser.",
     brandHome: "Whats2PDF — home",
     privacyPill: "Your files never leave your browser",
     eyebrow: "Simple, private, and organized",
     heroLineOne: "Your WhatsApp chat.",
-    heroLineTwo: "Beautifully on paper.",
+    heroLineTwo: "Beautiful, just like on paper.",
     heroDescription: "Turn your WhatsApp export ZIP into an easy-to-read PDF, interactive HTML, or EPUB, with messages, photos, dates, and attachments in the right place.",
     stepsLabel: "Steps",
     steps: ["Upload ZIP", "Review", "Download file"],
@@ -124,7 +140,20 @@ export const dictionaries = {
       ["100% private", "Processed on your device"],
       ["Photos in context", "Media stays with its message"],
       ["Three formats", "PDF, interactive HTML, or EPUB"],
+      ["Open source", "Inspect the code on GitHub"],
     ],
+    openSourceLabel: "Open source",
+    openSourceKicker: "Open source",
+    openSourceTitle: "Open source and free to inspect.",
+    openSourceDescription: "Whats2PDF is an open source project: every line of code that runs in your browser is published on GitHub. Anyone can review, audit, adapt, or contribute.",
+    openSourceCta: "View the code on GitHub",
+    openSourceRepoLabel: "Repository",
+    openSourcePoints: [
+      ["Public code", "The entire project lives on GitHub, with no closed parts."],
+      ["Auditable", "You can check line by line that nothing leaves your device."],
+      ["Free to use", "Run it locally, fork it, and adapt it to your needs."],
+    ],
+    viewOnGithub: "Open the repository on GitHub",
     howKicker: "How to export",
     howTitle: "How to export your WhatsApp chat.",
     howSteps: [
@@ -188,6 +217,7 @@ export const dictionaries = {
     fullPdfRemaining: (count: number) => `+ ${count} messages in the complete file`,
     footerText: "Made to organize memories, records, and important conversations.",
     footerPrivacy: "Privacy by design.",
+    footerOpenSource: "Open source project, with public code on GitHub.",
   },
 } as const;
 

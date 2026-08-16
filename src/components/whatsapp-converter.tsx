@@ -12,6 +12,7 @@ import {
   FileCode2,
   FileText,
   FileVideo,
+  Github,
   ImageIcon,
   LoaderCircle,
   LockKeyhole,
@@ -25,11 +26,13 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { dictionaries, type Locale } from "@/lib/i18n";
+import { dictionaries, REPOSITORY_URL, type Locale } from "@/lib/i18n";
 import type { ChatAttachment, ExportFormat, ParsedChat } from "@/lib/types";
 import { parseWhatsAppZip, revokeChatUrls } from "@/lib/whatsapp";
 
 type AppStatus = "idle" | "reading" | "ready" | "generating" | "error";
+
+const trustIcons = [ShieldCheck, ImageIcon, FileText, Github];
 
 function formatFileSize(bytes: number, locale: Locale) {
   const numberFormat = new Intl.NumberFormat(locale === "en" ? "en-US" : "pt-BR", { maximumFractionDigits: 1 });
@@ -167,6 +170,16 @@ export function WhatsAppConverter({ initialLocale }: { initialLocale: Locale }) 
             <button className={locale === "pt" ? "active" : ""} type="button" onClick={() => changeLocale("pt")} aria-pressed={locale === "pt"}>PT</button>
             <button className={locale === "en" ? "active" : ""} type="button" onClick={() => changeLocale("en")} aria-pressed={locale === "en"}>EN</button>
           </div>
+          <a
+            className="github-link"
+            href={REPOSITORY_URL}
+            target="_blank"
+            rel="noreferrer"
+            title={copy.viewOnGithub}
+            aria-label={copy.viewOnGithub}
+          >
+            <Github aria-hidden="true" /> <span>{copy.openSourceLabel}</span>
+          </a>
           <div className="privacy-pill"><LockKeyhole aria-hidden="true" /> {copy.privacyPill}</div>
         </div>
       </header>
@@ -231,9 +244,15 @@ export function WhatsAppConverter({ initialLocale }: { initialLocale: Locale }) 
             </div>
 
             <div className="trust-row">
-              <div><ShieldCheck aria-hidden="true" /><span><strong>{copy.trust[0][0]}</strong>{copy.trust[0][1]}</span></div>
-              <div><ImageIcon aria-hidden="true" /><span><strong>{copy.trust[1][0]}</strong>{copy.trust[1][1]}</span></div>
-              <div><FileText aria-hidden="true" /><span><strong>{copy.trust[2][0]}</strong>{copy.trust[2][1]}</span></div>
+              {copy.trust.map(([heading, description], index) => {
+                const Icon = trustIcons[index] ?? ShieldCheck;
+                return (
+                  <div key={heading}>
+                    <Icon aria-hidden="true" />
+                    <span><strong>{heading}</strong>{description}</span>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="how-to">
@@ -258,6 +277,26 @@ export function WhatsAppConverter({ initialLocale }: { initialLocale: Locale }) 
                   </li>
                 ))}
               </ol>
+            </div>
+
+            <div className="open-source">
+              <div className="open-source-copy">
+                <span className="section-kicker">{copy.openSourceKicker}</span>
+                <h2>{copy.openSourceTitle}</h2>
+                <p>{copy.openSourceDescription}</p>
+                <a className="button button-outline" href={REPOSITORY_URL} target="_blank" rel="noreferrer">
+                  <Github aria-hidden="true" /> {copy.openSourceCta}
+                </a>
+                <code className="repo-url">github.com/keverupp/whats2pdf</code>
+              </div>
+              <ul className="open-source-points">
+                {copy.openSourcePoints.map(([heading, description]) => (
+                  <li key={heading}>
+                    <span><Check aria-hidden="true" /></span>
+                    <div><strong>{heading}</strong><p>{description}</p></div>
+                  </li>
+                ))}
+              </ul>
             </div>
           </section>
         ) : (
@@ -428,9 +467,17 @@ export function WhatsAppConverter({ initialLocale }: { initialLocale: Locale }) 
       </main>
 
       <footer>
-        <a className="brand brand-footer" href="#top"><span className="brand-mark"><MessageCircleMore aria-hidden="true" /></span><span>Whats<span>2</span>PDF</span></a>
-        <p>{copy.footerText}</p>
-        <span>{copy.footerPrivacy}</span>
+        <div className="footer-brand">
+          <a className="brand brand-footer" href="#top"><span className="brand-mark"><MessageCircleMore aria-hidden="true" /></span><span>Whats<span>2</span>PDF</span></a>
+          <p>{copy.footerText}</p>
+        </div>
+        <div className="footer-meta">
+          <a className="footer-link" href={REPOSITORY_URL} target="_blank" rel="noreferrer">
+            <Github aria-hidden="true" /> {copy.openSourceRepoLabel}
+          </a>
+          <span>{copy.footerOpenSource}</span>
+          <span>{copy.footerPrivacy}</span>
+        </div>
       </footer>
     </div>
   );
