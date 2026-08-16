@@ -12,6 +12,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-0f5c50?style=flat-square)](LICENSE)
 
+**Português** · [English](README.en.md)
+
 [Repositório](https://github.com/keverupp/whats2pdf) · [Como usar](#-como-usar) · [Rodar localmente](#-rodando-localmente) · [Contribuir](#-contribuindo)
 
 </div>
