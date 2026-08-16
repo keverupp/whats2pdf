@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+.vercel/
+*.log
+.env*
+
+# Exports contain private conversations and media.
+*.zip
+
+# Local previews may contain private conversation data.
+pdf-page-*.png
+whats2pdf-preview*.png
+whats2pdf-mobile*.png
+
