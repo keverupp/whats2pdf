@@ -1,9 +1,19 @@
 import { jsPDF } from "jspdf";
 import { pdfCopy } from "@/lib/i18n";
 import type { ChatAttachment, ParsedChat, PdfOptions } from "@/lib/types";
+import type { PDFRef } from "pdf-lib";
 
 type PdfImage = {
   dataUrl: string;
+  width: number;
+  height: number;
+};
+
+type MediaPlacement = {
+  attachment: ChatAttachment;
+  pageNumber: number;
+  x: number;
+  y: number;
   width: number;
   height: number;
 };
@@ -32,7 +42,7 @@ function pdfSafe(value: string) {
 
 function fileLabel(attachment: ChatAttachment, locale: PdfOptions["locale"], embedded = false) {
   const labels = pdfCopy[locale];
-  return `${labels[attachment.category]} · ${attachment.name}${embedded ? ` · ${labels.embedded}` : ""}`;
+  return `${labels[attachment.category]} · ${embedded ? `${labels.embedded} · ` : ""}${attachment.name}`;
 }
 
 function formatDateRange(chat: ParsedChat, locale: PdfOptions["locale"]) {
@@ -96,6 +106,7 @@ export async function generateChatPdf(
     }
   }
   const mediaAttachments = Array.from(mediaByName.values());
+  const mediaPlacements: MediaPlacement[] = [];
   const layoutProgressLimit = mediaAttachments.length > 0 ? 85 : 100;
   const doc = new jsPDF({
     orientation: "portrait",
@@ -271,6 +282,16 @@ export async function generateChatPdf(
       const isEmbedded = options.includeMedia && (attachment.category === "audio" || attachment.category === "video");
       const label = doc.splitTextToSize(pdfSafe(fileLabel(attachment, options.locale, isEmbedded)), bubbleWidth - 17) as string[];
       doc.text(label[0], bubbleX + 8, innerY + 5.1);
+      if (isEmbedded) {
+        mediaPlacements.push({
+          attachment,
+          pageNumber: doc.getCurrentPageInfo().pageNumber,
+          x: bubbleX + 4,
+          y: innerY,
+          width: bubbleWidth - 8,
+          height: 8,
+        });
+      }
       innerY += 10;
     }
 
@@ -301,7 +322,7 @@ export async function generateChatPdf(
   let pdfBytes = new Uint8Array(doc.output("arraybuffer"));
 
   if (mediaAttachments.length > 0) {
-    const { PDFDocument } = await import("pdf-lib");
+    const { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName } = await import("pdf-lib");
     const pdfDocument = await PDFDocument.load(pdfBytes);
 
     for (let index = 0; index < mediaAttachments.length; index += 1) {
@@ -312,6 +333,48 @@ export async function generateChatPdf(
       });
       onProgress?.(layoutProgressLimit + Math.round(((index + 1) / mediaAttachments.length) * (100 - layoutProgressLimit)));
     }
+
+    await pdfDocument.flush();
+    const names = pdfDocument.catalog.lookup(PDFName.of("Names"), PDFDict);
+    const embeddedFiles = names.lookup(PDFName.of("EmbeddedFiles"), PDFDict);
+    const embeddedFileNames = embeddedFiles.lookup(PDFName.of("Names"), PDFArray);
+    const fileRefs = new Map<string, PDFRef>();
+
+    mediaAttachments.forEach((attachment, index) => {
+      fileRefs.set(attachment.name, embeddedFileNames.get(index * 2 + 1) as PDFRef);
+    });
+
+    const pointsPerMillimeter = 72 / 25.4;
+    const pages = pdfDocument.getPages();
+    mediaPlacements.forEach((placement, index) => {
+      const page = pages[placement.pageNumber - 1];
+      const fileRef = fileRefs.get(placement.attachment.name);
+      if (!page || !fileRef) return;
+
+      const pageHeight = page.getHeight();
+      const x = placement.x * pointsPerMillimeter;
+      const y = pageHeight - (placement.y + placement.height) * pointsPerMillimeter;
+      const width = placement.width * pointsPerMillimeter;
+      const height = placement.height * pointsPerMillimeter;
+      const annotation = pdfDocument.context.obj({
+        Type: "Annot",
+        Subtype: "FileAttachment",
+        Rect: [x, y, x + width, y + height],
+        FS: fileRef,
+        Contents: PDFHexString.fromText(fileLabel(placement.attachment, options.locale, true)),
+        Name: "Paperclip",
+        NM: PDFHexString.fromText(`whats2pdf-media-${index}`),
+        C: [0.06, 0.36, 0.31],
+        F: 4,
+      });
+      const annotationRef = pdfDocument.context.register(annotation);
+      let annotations = page.node.lookupMaybe(PDFName.of("Annots"), PDFArray);
+      if (!annotations) {
+        annotations = pdfDocument.context.obj([]);
+        page.node.set(PDFName.of("Annots"), annotations);
+      }
+      annotations.push(annotationRef);
+    });
 
     pdfBytes = new Uint8Array(await pdfDocument.save({ useObjectStreams: true }));
   }

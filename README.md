@@ -49,9 +49,9 @@ Qualquer serviço com Node.js pode executar `npm run build` e `npm start`. O pro
 - Mensagens multilinha e avisos do sistema.
 - Imagens JPEG, PNG, WebP e GIF que o navegador conseguir decodificar.
 - Reprodução de áudios e vídeos diretamente na prévia da conversa.
-- Áudios e vídeos originais incorporados como anexos extraíveis do PDF.
+- Áudios e vídeos originais incorporados como anexos, com cartões clicáveis em leitores compatíveis.
 - Documentos identificados na linha do tempo.
 - Escolha de qual participante representa o usuário.
 - PDF A4 paginado, pesquisável e com indicação das datas.
 
-O acesso aos arquivos incorporados depende do leitor de PDF; Adobe Acrobat e outros leitores com painel de anexos permitem extraí-los. Visualizadores simples do navegador podem mostrar apenas o cartão da mídia. Imagens HEIC dependem do suporte do navegador; quando não puderem ser abertas, aparecem como anexos identificados.
+O acesso aos arquivos incorporados depende do leitor de PDF. Adobe Acrobat e outros leitores com suporte a anotações de anexos permitem abrir ou extrair a mídia pelo cartão; visualizadores simples do navegador podem mostrar apenas o cartão. Reprodução inline universal não faz parte do padrão implementado. Imagens HEIC dependem do suporte do navegador; quando não puderem ser abertas, aparecem como anexos identificados.
