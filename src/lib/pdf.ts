@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { pdfCopy } from "@/lib/i18n";
 import type { ChatAttachment, ParsedChat, PdfOptions } from "@/lib/types";
 
 type PdfImage = {
@@ -29,21 +30,15 @@ function pdfSafe(value: string) {
     .replace(/[^\u0009\u000A\u000D\u0020-\u00FF]/g, "");
 }
 
-function fileLabel(attachment: ChatAttachment) {
-  const labels = {
-    audio: "Mensagem de áudio",
-    video: "Vídeo",
-    document: "Documento",
-    other: "Arquivo",
-    image: "Imagem",
-  };
-  return `${labels[attachment.category]} · ${attachment.name}`;
+function fileLabel(attachment: ChatAttachment, locale: PdfOptions["locale"], embedded = false) {
+  const labels = pdfCopy[locale];
+  return `${labels[attachment.category]} · ${attachment.name}${embedded ? ` · ${labels.embedded}` : ""}`;
 }
 
-function formatDateRange(chat: ParsedChat) {
+function formatDateRange(chat: ParsedChat, locale: PdfOptions["locale"]) {
   if (!chat.startedAt) return "";
   if (!chat.endedAt || chat.startedAt === chat.endedAt) return chat.startedAt;
-  return `${chat.startedAt} a ${chat.endedAt}`;
+  return `${chat.startedAt} ${pdfCopy[locale].rangeConnector} ${chat.endedAt}`;
 }
 
 function loadPdfImage(blob: Blob): Promise<PdfImage | null> {
@@ -89,6 +84,19 @@ export async function generateChatPdf(
   options: PdfOptions,
   onProgress?: (progress: number) => void,
 ) {
+  const labels = pdfCopy[options.locale];
+  const mediaByName = new Map<string, ChatAttachment>();
+  if (options.includeMedia) {
+    for (const message of chat.messages) {
+      for (const attachment of message.attachments) {
+        if (attachment.category === "audio" || attachment.category === "video") {
+          mediaByName.set(attachment.name, attachment);
+        }
+      }
+    }
+  }
+  const mediaAttachments = Array.from(mediaByName.values());
+  const layoutProgressLimit = mediaAttachments.length > 0 ? 85 : 100;
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -119,13 +127,13 @@ export async function generateChatPdf(
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.text(
-        pdfSafe(`${chat.messages.length} mensagens · ${chat.participants.length} participantes · ${formatDateRange(chat)}`),
+        pdfSafe(`${chat.messages.length} ${labels.messages} · ${chat.participants.length} ${labels.participants} · ${formatDateRange(chat, options.locale)}`),
         margin + 15,
         21,
       );
       doc.setFontSize(7.5);
       doc.setTextColor(207, 235, 228);
-      doc.text("Exportado e organizado com Whats2PDF", margin + 15, 27);
+      doc.text(labels.organizedBy, margin + 15, 27);
       cursorY = 50;
       return;
     }
@@ -186,7 +194,7 @@ export async function generateChatPdf(
       doc.setTextColor(...COLORS.muted);
       doc.text(lines, pageWidth / 2, cursorY + 4.6, { align: "center" });
       cursorY += height + 3;
-      onProgress?.(Math.round(((index + 1) / chat.messages.length) * 100));
+      onProgress?.(Math.round(((index + 1) / chat.messages.length) * layoutProgressLimit));
       continue;
     }
 
@@ -260,7 +268,8 @@ export async function generateChatPdf(
       doc.setTextColor(...COLORS.brand);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.3);
-      const label = doc.splitTextToSize(pdfSafe(fileLabel(attachment)), bubbleWidth - 17) as string[];
+      const isEmbedded = options.includeMedia && (attachment.category === "audio" || attachment.category === "video");
+      const label = doc.splitTextToSize(pdfSafe(fileLabel(attachment, options.locale, isEmbedded)), bubbleWidth - 17) as string[];
       doc.text(label[0], bubbleX + 8, innerY + 5.1);
       innerY += 10;
     }
@@ -270,7 +279,7 @@ export async function generateChatPdf(
     doc.setFontSize(6.8);
     doc.text(pdfSafe(message.time), bubbleX + bubbleWidth - 5, cursorY + bubbleHeight - 3.2, { align: "right" });
     cursorY += bubbleHeight + 3;
-    onProgress?.(Math.round(((index + 1) / chat.messages.length) * 100));
+    onProgress?.(Math.round(((index + 1) / chat.messages.length) * layoutProgressLimit));
   }
 
   const totalPages = doc.getNumberOfPages();
@@ -289,5 +298,30 @@ export async function generateChatPdf(
     .replace(/^-|-$/g, "")
     .toLowerCase();
 
-  doc.save(`${fileName || "conversa-whatsapp"}.pdf`);
+  let pdfBytes = new Uint8Array(doc.output("arraybuffer"));
+
+  if (mediaAttachments.length > 0) {
+    const { PDFDocument } = await import("pdf-lib");
+    const pdfDocument = await PDFDocument.load(pdfBytes);
+
+    for (let index = 0; index < mediaAttachments.length; index += 1) {
+      const attachment = mediaAttachments[index];
+      await pdfDocument.attach(await attachment.blob.arrayBuffer(), attachment.name, {
+        mimeType: attachment.mimeType,
+        description: fileLabel(attachment, options.locale),
+      });
+      onProgress?.(layoutProgressLimit + Math.round(((index + 1) / mediaAttachments.length) * (100 - layoutProgressLimit)));
+    }
+
+    pdfBytes = new Uint8Array(await pdfDocument.save({ useObjectStreams: true }));
+  }
+
+  const downloadBlob = new Blob([Uint8Array.from(pdfBytes)], { type: "application/pdf" });
+  const downloadUrl = URL.createObjectURL(downloadBlob);
+  const anchor = document.createElement("a");
+  anchor.href = downloadUrl;
+  anchor.download = `${fileName || "conversa-whatsapp"}.pdf`;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1_000);
+  onProgress?.(100);
 }

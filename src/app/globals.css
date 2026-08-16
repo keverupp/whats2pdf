@@ -127,6 +127,41 @@ select:focus-visible {
   height: 14px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.language-switcher {
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #f1f5f3;
+  border: 1px solid #dbe6e2;
+  border-radius: 9px;
+}
+
+.language-switcher button {
+  width: 32px;
+  height: 27px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.language-switcher button.active {
+  color: #fff;
+  background: var(--brand);
+  box-shadow: 0 2px 6px rgba(15, 92, 80, 0.18);
+}
+
 .hero {
   position: relative;
   min-height: 394px;
@@ -1076,6 +1111,81 @@ select:focus-visible {
   object-fit: cover;
 }
 
+.media-card {
+  width: 320px;
+  max-width: 100%;
+  margin: 3px 0 5px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 92, 80, 0.1);
+  border-radius: 8px;
+}
+
+.media-card-header {
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 26px;
+  align-items: center;
+  gap: 7px;
+}
+
+.media-card-header > svg {
+  width: 18px;
+  height: 18px;
+  color: var(--brand);
+}
+
+.media-card-header span,
+.media-card-header b,
+.media-card-header small {
+  display: block;
+  min-width: 0;
+}
+
+.media-card-header b {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 8px;
+}
+
+.media-card-header small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 7px;
+}
+
+.media-card-header a {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--mint);
+  border-radius: 7px;
+}
+
+.media-card-header a svg {
+  width: 13px;
+  height: 13px;
+}
+
+.media-card audio {
+  width: calc(100% - 12px);
+  height: 32px;
+  margin: 0 6px 7px;
+  display: block;
+}
+
+.media-card video {
+  width: 100%;
+  max-height: 340px;
+  aspect-ratio: 16 / 9;
+  display: block;
+  object-fit: contain;
+  background: #14201d;
+}
+
 .attachment-card {
   min-width: 220px;
   max-width: 100%;
@@ -1192,6 +1302,14 @@ footer p {
     padding: 0;
     justify-content: center;
     font-size: 0;
+  }
+
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .language-switcher button {
+    width: 29px;
   }
 
   .privacy-pill svg {

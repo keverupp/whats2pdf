@@ -1,3 +1,5 @@
+import type { Locale } from "@/lib/i18n";
+
 export type AttachmentCategory = "image" | "audio" | "video" | "document" | "other";
 
 export type ChatAttachment = {
@@ -30,10 +32,13 @@ export type ParsedChat = {
   attachmentCount: number;
   imageCount: number;
   warnings: string[];
+  detectedLocale: Locale;
 };
 
 export type PdfOptions = {
   title: string;
   owner: string;
   includeImages: boolean;
+  includeMedia: boolean;
+  locale: Locale;
 };

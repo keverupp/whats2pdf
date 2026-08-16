@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { parserCopy, type Locale } from "@/lib/i18n";
 import type {
   AttachmentCategory,
   ChatAttachment,
@@ -6,7 +7,7 @@ import type {
   ParsedChat,
 } from "@/lib/types";
 
-const MESSAGE_START = /^\s*[\u200e\u200f]?\[?(\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4})(?:,?\s+)(\d{1,2}:\d{2}(?::\d{2})?(?:\s*(?:[ap]\.?\s*m\.?|da\s+(?:manhã|tarde|noite)))?)\]?\s*[-–]\s*(.*)$/i;
+const MESSAGE_START = /^\s*[\u200e\u200f]?\[?(\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4})(?:,?\s+)(\d{1,2}:\d{2}(?::\d{2})?(?:\s*(?:[ap]\.?\s*m\.?|da\s+(?:manhã|tarde|noite)))?)(?:\]\s*(?:[-–]\s*)?|\s*[-–]\s*)(.*)$/i;
 
 const MIME_BY_EXTENSION: Record<string, string> = {
   jpg: "image/jpeg",
@@ -21,9 +22,12 @@ const MIME_BY_EXTENSION: Record<string, string> = {
   mp3: "audio/mpeg",
   m4a: "audio/mp4",
   wav: "audio/wav",
+  aac: "audio/aac",
+  amr: "audio/amr",
   mp4: "video/mp4",
   mov: "video/quicktime",
   "3gp": "video/3gpp",
+  webm: "video/webm",
   pdf: "application/pdf",
   doc: "application/msword",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -60,11 +64,14 @@ function titleFromFileName(fileName: string) {
     .trim();
 }
 
-function normalizeDateLabel(rawDate: string) {
+function normalizeDateLabel(rawDate: string, locale: Locale) {
   const parts = rawDate.split(/[/.\-]/);
   if (parts.length !== 3) return rawDate;
   const [first, second, yearValue] = parts;
   const year = yearValue.length === 2 ? `20${yearValue}` : yearValue;
+  if (locale === "en") {
+    return `${first.padStart(2, "0")}/${second.padStart(2, "0")}/${year}`;
+  }
   return `${first.padStart(2, "0")}/${second.padStart(2, "0")}/${year}`;
 }
 
@@ -75,10 +82,12 @@ function normalizeTime(rawTime: string) {
 
   let hour = Number(match[1]);
   const suffix = match[3].toLowerCase();
-  if ((suffix.includes("p") || suffix.includes("tarde") || suffix.includes("noite")) && hour < 12) {
+  const isPm = /^p\.?\s*m\.?$/i.test(suffix) || suffix.includes("tarde") || suffix.includes("noite");
+  const isAm = /^a\.?\s*m\.?$/i.test(suffix) || suffix.includes("manhã");
+  if (isPm && hour < 12) {
     hour += 12;
   }
-  if ((suffix.includes("a") || suffix.includes("manhã")) && hour === 12) {
+  if (isAm && hour === 12) {
     hour = 0;
   }
 
@@ -106,14 +115,44 @@ function removeAttachmentMarker(text: string, fileNames: string[]) {
 
   return clean
     .replace(/<?\s*(?:arquivo|ficheiro|file|media)\s+(?:anexad[oa]|attached|omitted)\s*>?/gi, "")
+    .replace(/<\s*attached:\s*>/gi, "")
     .replace(/<\s*Mensagem editada\s*>/gi, " (editada)")
+    .replace(/<\s*This message was edited\s*>/gi, " (edited)")
     .replace(/\(\s*\)/g, "")
     .replace(/<\s*>/g, "")
     .replace(/^\s*[-–]\s*/, "")
     .trim();
 }
 
-function parseText(text: string, attachmentByName: Map<string, ChatAttachment>) {
+function detectTranscriptLocale(text: string, sourceName: string): Locale {
+  const content = `${sourceName}\n${text}`.toLowerCase();
+  const englishSignals = [
+    "whatsapp chat with",
+    "messages and calls are end-to-end encrypted",
+    "file attached",
+    "media omitted",
+    "this message was edited",
+  ];
+  const portugueseSignals = [
+    "conversa do whatsapp com",
+    "mensagens e ligações são protegidas",
+    "arquivo anexado",
+    "mídia oculta",
+    "mensagem editada",
+    " da tarde - ",
+  ];
+  const amPmSignals = content.match(/\b(?:a\.?m\.?|p\.?m\.?)\s*(?:\]|-)/g)?.length ?? 0;
+  const englishScore = englishSignals.filter((signal) => content.includes(signal)).length + Math.min(2, amPmSignals);
+  const portugueseScore = portugueseSignals.filter((signal) => content.includes(signal)).length;
+  return englishScore > portugueseScore ? "en" : "pt";
+}
+
+function parseText(
+  text: string,
+  attachmentByName: Map<string, ChatAttachment>,
+  locale: Locale,
+  errorLocale: Locale,
+) {
   const lines = text.replace(/\r\n?/g, "\n").split("\n");
   const rawMessages: Array<{
     date: string;
@@ -134,7 +173,7 @@ function parseText(text: string, attachmentByName: Map<string, ChatAttachment>) 
   }
 
   if (rawMessages.length === 0) {
-    throw new Error("Não encontrei mensagens no arquivo de texto. Verifique se o ZIP foi exportado pelo WhatsApp.");
+    throw new Error(parserCopy[errorLocale].noMessages);
   }
 
   return rawMessages.map<ChatMessage>((raw, index) => {
@@ -147,7 +186,7 @@ function parseText(text: string, attachmentByName: Map<string, ChatAttachment>) 
       messageText,
       attachments.map((attachment) => attachment.name),
     );
-    const dateLabel = normalizeDateLabel(raw.date);
+    const dateLabel = normalizeDateLabel(raw.date, locale);
 
     return {
       id: `${dateLabel}-${raw.time}-${index}`,
@@ -162,9 +201,9 @@ function parseText(text: string, attachmentByName: Map<string, ChatAttachment>) 
   }).filter((message) => message.text || message.attachments.length > 0);
 }
 
-export async function parseWhatsAppZip(file: File): Promise<ParsedChat> {
+export async function parseWhatsAppZip(file: File, errorLocale: Locale = "pt"): Promise<ParsedChat> {
   if (file.size > 200 * 1024 * 1024) {
-    throw new Error("O arquivo ultrapassa o limite de 200 MB.");
+    throw new Error(parserCopy[errorLocale].tooLarge);
   }
 
   const zip = await JSZip.loadAsync(file);
@@ -172,7 +211,7 @@ export async function parseWhatsAppZip(file: File): Promise<ParsedChat> {
   const textEntries = entries.filter((entry) => entry.name.toLowerCase().endsWith(".txt"));
 
   if (textEntries.length === 0) {
-    throw new Error("Este ZIP não contém o arquivo .txt da conversa.");
+    throw new Error(parserCopy[errorLocale].noTranscript);
   }
 
   const transcriptEntry = textEntries[0];
@@ -191,13 +230,15 @@ export async function parseWhatsAppZip(file: File): Promise<ParsedChat> {
       category,
       size: blob.size,
       blob,
-      previewUrl: category === "image" ? URL.createObjectURL(blob) : undefined,
+      previewUrl: ["image", "audio", "video"].includes(category) ? URL.createObjectURL(blob) : undefined,
     };
     attachmentByName.set(cleanInvisibleCharacters(name).toLocaleLowerCase(), attachment);
   }));
 
   const transcript = await transcriptEntry.async("string");
-  const messages = parseText(transcript, attachmentByName);
+  const detectedLocale = detectTranscriptLocale(transcript, file.name);
+  const effectiveLocale = detectedLocale === "en" ? "en" : errorLocale;
+  const messages = parseText(transcript, attachmentByName, detectedLocale, effectiveLocale);
   const participants = Array.from(new Set(messages.flatMap((message) => message.author ? [message.author] : [])));
   const referencedAttachments = messages.flatMap((message) => message.attachments);
   const referencedNames = new Set(referencedAttachments.map((attachment) => attachment.name));
@@ -205,11 +246,11 @@ export async function parseWhatsAppZip(file: File): Promise<ParsedChat> {
   const warnings: string[] = [];
 
   if (missingReferences > 0) {
-    warnings.push(`${missingReferences} arquivo(s) do ZIP não estavam referenciados no histórico e foram ignorados.`);
+    warnings.push(parserCopy[effectiveLocale].ignoredFiles(missingReferences));
   }
 
   return {
-    title: titleFromFileName(file.name) || "Conversa do WhatsApp",
+    title: titleFromFileName(file.name) || (detectedLocale === "en" ? "WhatsApp chat" : "Conversa do WhatsApp"),
     sourceName: file.name,
     messages,
     participants,
@@ -218,6 +259,7 @@ export async function parseWhatsAppZip(file: File): Promise<ParsedChat> {
     attachmentCount: referencedAttachments.length,
     imageCount: referencedAttachments.filter((attachment) => attachment.category === "image").length,
     warnings,
+    detectedLocale,
   };
 }
 

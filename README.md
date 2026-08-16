@@ -2,9 +2,11 @@
 
 Aplicação web para transformar conversas exportadas do WhatsApp (`.zip`) em PDFs A4 organizados, com mensagens, datas, imagens e referências aos demais anexos.
 
+A interface está disponível em português e inglês. O idioma é escolhido automaticamente pelo navegador e também pode mudar para inglês ao reconhecer uma exportação do WhatsApp nesse idioma. O seletor **PT / EN** permite ajuste manual, e os rótulos do PDF acompanham a escolha.
+
 ## Privacidade
 
-Todo o processamento acontece localmente no navegador. O ZIP não é enviado, armazenado ou processado por uma API. Além de proteger as conversas, isso permite publicar a aplicação como um site estático na Vercel ou em outra plataforma compatível com Next.js.
+Todo o processamento do ZIP acontece localmente no navegador. A conversa não é enviada, armazenada ou processada por uma API. A aplicação pode ser publicada diretamente na Vercel ou em outra plataforma compatível com Next.js.
 
 ## Rodando localmente
 
@@ -43,10 +45,13 @@ Qualquer serviço com Node.js pode executar `npm run build` e `npm start`. O pro
 ## O que é suportado
 
 - Exportações em português e inglês, com formatos comuns de Android e iPhone.
+- Interface e PDF em português ou inglês, com detecção automática e seletor manual.
 - Mensagens multilinha e avisos do sistema.
 - Imagens JPEG, PNG, WebP e GIF que o navegador conseguir decodificar.
-- Áudios, vídeos e documentos identificados na linha do tempo.
+- Reprodução de áudios e vídeos diretamente na prévia da conversa.
+- Áudios e vídeos originais incorporados como anexos extraíveis do PDF.
+- Documentos identificados na linha do tempo.
 - Escolha de qual participante representa o usuário.
 - PDF A4 paginado, pesquisável e com indicação das datas.
 
-Áudios e vídeos são listados no PDF pelo nome, mas não são incorporados como arquivos executáveis. Imagens HEIC dependem do suporte do navegador; quando não puderem ser abertas, aparecem como anexos identificados.
+O acesso aos arquivos incorporados depende do leitor de PDF; Adobe Acrobat e outros leitores com painel de anexos permitem extraí-los. Visualizadores simples do navegador podem mostrar apenas o cartão da mídia. Imagens HEIC dependem do suporte do navegador; quando não puderem ser abertas, aparecem como anexos identificados.
